@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yas Live — Régie</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/assets/yas-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yas-navy: #00377D;
+    --yas-navy-logo: #123274;
+    --yas-yellow: #FFD100;
+    --yas-yellow-soft: #FFF5CB;
+    --yas-sky: #D3E2FA;
+    --yas-sky-bg: #F1F5FD;
+    --yas-sky-bg-2: #F6F9FE;
+    --yas-pink: #EE2C82;
+    --yas-ink: #1A1A1A;
+    --ok: #0B9E5A;
+    --err: #CF2E2E;
+    --font: "Figtree", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background:
+      radial-gradient(700px 380px at 92% -6%, var(--yas-sky-bg), transparent 65%),
+      radial-gradient(600px 420px at -8% 106%, var(--yas-yellow-soft), transparent 55%),
+      #fff;
+    color: var(--yas-ink); min-height: 100dvh;
+  }
+  .shell { max-width: 680px; margin: 0 auto; padding: 16px clamp(14px, 4vw, 28px) 48px; }
+
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 0 22px; }
+  header img { height: 50px; width: auto; display: block; }
+  .logo-sub {
+    font-weight: 800; font-size: 19px; color: var(--yas-navy); line-height: 1;
+    border-left: 2px solid var(--yas-sky); padding-left: 12px;
+  }
+  .logo-sub small { display: block; font-weight: 600; font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: #7A93BC; margin-top: 4px; }
+
+  .card {
+    background: #fff;
+    border: 1px solid #E7E7E8;
+    border-radius: 20px; padding: 22px; margin-bottom: 16px;
+    box-shadow: 0 16px 34px -18px rgba(0,55,125,.18);
+  }
+  .card h2 { font-weight: 900; font-size: 19px; color: var(--yas-navy); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .card h2::after { content: ""; flex: 1; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--yas-yellow), transparent); }
+  .card .lead { font-size: 14px; color: #4A6798; line-height: 1.55; font-weight: 500; }
+
+  label { display: block; font-size: 13px; font-weight: 700; color: var(--yas-navy); margin: 14px 0 6px; }
+  input[type=text], input[type=password] {
+    width: 100%; font-family: var(--font); font-size: 16px; font-weight: 500;
+    padding: 13px 18px; border-radius: 999px;
+    border: 2px solid var(--yas-sky);
+    background: var(--yas-sky-bg-2); color: var(--yas-ink); outline: none;
+    transition: border-color .2s, background .2s;
+  }
+  input:focus { border-color: var(--yas-navy); background: #fff; }
+  input::placeholder { color: #9DB2D2; }
+
+  .btn {
+    font-family: var(--font); font-weight: 800; font-size: 16px;
+    padding: 13px 28px; border: none; border-radius: 999px; cursor: pointer;
+    background: var(--yas-yellow); color: var(--yas-navy);
+    box-shadow: 0 4px 0 rgba(0,55,125,.22);
+    transition: transform .15s, box-shadow .15s;
+    min-height: 48px;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,55,125,.22); }
+  .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,55,125,.22); }
+  .btn.ghost { background: #fff; color: var(--yas-navy); border: 2px solid var(--yas-navy); box-shadow: none; }
+  .btn.block { width: 100%; margin-top: 18px; }
+  .btn-row { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1; min-width: 140px; }
+
+  .msg { font-size: 13.5px; font-weight: 600; margin-top: 12px; min-height: 18px; color: #4A6798; }
+  .msg.err { color: var(--err); } .msg.ok { color: var(--ok); }
+
+  .status-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .status-label { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 21px; color: var(--yas-navy); }
+  .status-dot { width: 13px; height: 13px; border-radius: 50%; background: #B9C6DC; }
+  .status-dot.on { background: var(--ok); box-shadow: 0 0 0 5px rgba(11,158,90,.15); animation: pulse 1.4s infinite; }
+  .switch { position: relative; width: 74px; height: 40px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 100%; height: 100%; position: absolute; cursor: pointer; z-index: 2; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: 999px;
+    background: var(--yas-sky-bg); border: 2px solid var(--yas-sky);
+    transition: background .2s, border-color .2s;
+  }
+  .switch .thumb {
+    position: absolute; top: 5px; left: 6px; width: 30px; height: 30px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--yas-sky);
+    transition: transform .2s, border-color .2s;
+  }
+  .switch input:checked ~ .track { background: var(--yas-pink); border-color: var(--yas-pink); }
+  .switch input:checked ~ .thumb { transform: translateX(32px); border-color: #fff; }
+
+  .share-box {
+    display: flex; gap: 8px; align-items: stretch; margin-top: 6px;
+    background: var(--yas-yellow-soft); border: 2px dashed var(--yas-yellow);
+    border-radius: 16px; padding: 10px;
+  }
+  .share-box code {
+    flex: 1; font-size: 13px; color: var(--yas-navy); font-weight: 700; word-break: break-all;
+    display: flex; align-items: center; padding: 4px 6px; font-family: ui-monospace, monospace;
+  }
+  .share-box .btn { padding: 10px 18px; font-size: 14px; }
+
+  .preview-frame { width: 100%; aspect-ratio: 16/9; border-radius: 14px; overflow: hidden; background: var(--yas-navy-logo); margin-top: 8px; border: 0; }
+  .hidden { display: none !important; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <img src="/assets/yas-logo.svg" alt="Yas Comores">
+    <span class="logo-sub">Live<small>Régie</small></span>
+  </header>
+
+  <!-- Login -->
+  <section class="card" id="login-card">
+    <h2>Connexion</h2>
+    <p class="lead">Espace réservé à l'équipe. Entrez le mot de passe administrateur pour gérer la diffusion.</p>
+    <form id="login-form">
+      <label for="pwd">Mot de passe</label>
+      <input type="password" id="pwd" autocomplete="current-password" placeholder="••••••••••">
+      <button class="btn block" type="submit">Entrer en régie</button>
+      <div class="msg" id="login-msg"></div>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <div id="dash" class="hidden">
+
+    <section class="card">
+      <div class="status-row">
+        <span class="status-label"><span class="status-dot" id="status-dot"></span><span id="status-text">Hors ligne</span></span>
+        <label class="switch" title="Activer / couper la diffusion">
+          <input type="checkbox" id="live-switch">
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+      <div class="msg" id="live-msg"></div>
+    </section>
+
+    <section class="card">
+      <h2>Diffusion</h2>
+      <form id="stream-form">
+        <label for="url">Lien YouTube (direct non répertorié conseillé)</label>
+        <input type="text" id="url" placeholder="https://www.youtube.com/live/…" autocomplete="off">
+        <label for="title">Titre affiché aux invités</label>
+        <input type="text" id="title" placeholder="Ex. : Grand direct Yas — spécial Comores" autocomplete="off">
+        <div class="btn-row">
+          <button class="btn" type="submit">Enregistrer</button>
+        </div>
+        <div class="msg" id="stream-msg"></div>
+      </form>
+      <label>Aperçu régie</label>
+      <iframe class="preview-frame" id="preview" src="about:blank" allowfullscreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+    </section>
+
+    <section class="card">
+      <h2>Lien privé des invités</h2>
+      <p class="lead" style="margin-bottom:10px">Partagez uniquement ce lien. Régénérez-le pour couper l'accès aux anciens invités.</p>
+      <div class="share-box">
+        <code id="share-link">…</code>
+        <button class="btn" id="copy-btn" type="button">Copier</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost" id="regen-btn" type="button">Régénérer le lien</button>
+      </div>
+      <div class="msg" id="share-msg"></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let key = sessionStorage.getItem('yasKey') || '';
+  let state = null;
+
+  const api = async (path, opts = {}) => {
+    const r = await fetch(path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': key, ...(opts.headers || {}) }
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || 'Erreur');
+    return data;
+  };
+
+  const flash = (el, text, cls) => {
+    el.textContent = text; el.className = 'msg ' + (cls || '');
+    if (text) setTimeout(() => { el.textContent = ''; }, 4000);
+  };
+
+  function render() {
+    const s = state.stream;
+    $('live-switch').checked = s.live;
+    $('status-dot').classList.toggle('on', s.live);
+    $('status-text').textContent = s.live ? 'En direct' : 'Hors ligne';
+    if ($('title') !== document.activeElement) $('title').value = s.title || '';
+    $('preview').src = s.videoId ? `https://www.youtube.com/embed/${s.videoId}?rel=0` : 'about:blank';
+    $('share-link').textContent = `${location.origin}/live/${state.shareToken}`;
+  }
+
+  async function enter() {
+    try {
+      state = await api('/api/admin/state');
+      $('login-card').classList.add('hidden');
+      $('dash').classList.remove('hidden');
+      render();
+    } catch {
+      sessionStorage.removeItem('yasKey'); key = '';
+    }
+  }
+
+  $('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    key = $('pwd').value;
+    try {
+      await api('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: key }) });
+      sessionStorage.setItem('yasKey', key);
+      await enter();
+    } catch (err) { flash($('login-msg'), err.message, 'err'); }
+  });
+
+  $('stream-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = { title: $('title').value };
+    if ($('url').value.trim()) body.url = $('url').value;
+    try {
+      const d = await api('/api/admin/stream', { method: 'POST', body: JSON.stringify(body) });
+      state.stream = d.stream; $('url').value = ''; render();
+      flash($('stream-msg'), 'Diffusion mise à jour ✓', 'ok');
+    } catch (err) { flash($('stream-msg'), err.message, 'err'); }
+  });
+
+  $('live-switch').addEventListener('change', async (e) => {
+    try {
+      const d = await api('/api/admin/stream', { method: 'POST', body: JSON.stringify({ live: e.target.checked }) });
+      state.stream = d.stream; render();
+      flash($('live-msg'), d.stream.live ? 'Vous êtes en direct !' : 'Diffusion coupée.', 'ok');
+    } catch (err) {
+      e.target.checked = false;
+      flash($('live-msg'), err.message, 'err');
+    }
+  });
+
+  $('copy-btn').addEventListener('click', async () => {
+    await navigator.clipboard.writeText($('share-link').textContent);
+    flash($('share-msg'), 'Lien copié ✓', 'ok');
+  });
+
+  $('regen-btn').addEventListener('click', async () => {
+    if (!confirm('Régénérer le lien ? Les invités actuels perdront l\'accès.')) return;
+    const d = await api('/api/admin/regenerate', { method: 'POST' });
+    state.shareToken = d.shareToken; render();
+    flash($('share-msg'), 'Nouveau lien généré — l\'ancien est désactivé.', 'ok');
+  });
+
+  if (key) enter();
+</script>
+</body>
+</html>

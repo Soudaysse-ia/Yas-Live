@@ -1,0 +1,4 @@
+# Secrets locaux : mot de passe admin + token du lien privé (recréé au premier lancement)
+config.json
+node_modules/
+.DS_Store
