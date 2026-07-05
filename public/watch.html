@@ -60,6 +60,11 @@
     animation: riseIn .6s cubic-bezier(.2,.9,.3,1) both;
   }
   .player-card:fullscreen { border-radius: 0; display: flex; flex-direction: column; justify-content: center; }
+  /* Plein écran de secours (iPhone, environnements sans Fullscreen API) */
+  .player-card.fake-fs {
+    position: fixed; inset: 0; z-index: 999; margin: 0; border-radius: 0; border: none;
+    display: flex; flex-direction: column; justify-content: center; background: #fff;
+  }
   .player-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: var(--yas-navy-logo); }
   .player-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
@@ -244,11 +249,39 @@
     setTimeout(syncButtons, 100);
   });
 
-  document.getElementById('btn-fs').addEventListener('click', () => {
-    const card = document.getElementById('player-card');
-    if (document.fullscreenElement) document.exitFullscreen();
-    else if (card.requestFullscreen) card.requestFullscreen().catch(() => {});
-    else if (card.webkitRequestFullscreen) card.webkitRequestFullscreen();
+  const card = document.getElementById('player-card');
+
+  const realFullscreenActive = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const enterFake = () => { card.classList.add('fake-fs'); document.body.style.overflow = 'hidden'; };
+  const exitFake = () => { card.classList.remove('fake-fs'); document.body.style.overflow = ''; };
+
+  async function toggleFullscreen() {
+    if (realFullscreenActive()) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      return;
+    }
+    if (card.classList.contains('fake-fs')) { exitFake(); return; }
+    // Garde-fou : si l'API Fullscreen ne répond pas (permission en attente,
+    // WebView, iPhone…), on bascule sur le plein écran CSS.
+    const fallback = setTimeout(() => { if (!realFullscreenActive()) enterFake(); }, 600);
+    try {
+      if (card.requestFullscreen) {
+        await card.requestFullscreen();
+        clearTimeout(fallback); exitFake();
+      } else if (card.webkitRequestFullscreen) {
+        card.webkitRequestFullscreen(); // pas de promesse : le garde-fou tranche
+      } else {
+        throw new Error('non supporté');
+      }
+    } catch {
+      clearTimeout(fallback); enterFake();
+    }
+  }
+
+  document.getElementById('btn-fs').addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', () => { if (realFullscreenActive()) exitFake(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && card.classList.contains('fake-fs')) toggleFullscreen();
   });
 
   async function refresh() {
