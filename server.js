@@ -14,6 +14,7 @@ function loadConfig() {
     const cfg = {
       adminPassword: 'dis-yas-2026',
       shareToken: crypto.randomBytes(8).toString('hex'),
+      requireToken: false,
       stream: { videoId: '', title: '', live: false }
     };
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
@@ -82,15 +83,19 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // ---- Viewer (private link) ----
-  if (req.method === 'GET' && pathname.startsWith('/live/')) {
-    const token = pathname.split('/')[2];
-    if (token === config.shareToken) return sendFile(res, 'watch.html');
-    return sendFile(res, 'denied.html', 404);
+  // ---- Viewer ----
+  // Accès ouvert pour l'instant ; passer requireToken à true dans config.json pour filtrer.
+  const tokenRequired = config.requireToken === true;
+
+  if (req.method === 'GET' && (pathname === '/' || pathname === '/live' || pathname.startsWith('/live/'))) {
+    if (tokenRequired && pathname.split('/')[2] !== config.shareToken) {
+      return sendFile(res, 'denied.html', 404);
+    }
+    return sendFile(res, 'watch.html');
   }
 
   if (req.method === 'GET' && pathname === '/api/stream') {
-    if (url.searchParams.get('token') !== config.shareToken) {
+    if (tokenRequired && url.searchParams.get('token') !== config.shareToken) {
       return sendJSON(res, 403, { error: 'Lien invalide' });
     }
     const { videoId, title, live } = config.stream;
