@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Yas Live — Dis Yas !</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="/assets/yas-logo.svg">
@@ -60,10 +60,29 @@
     animation: riseIn .6s cubic-bezier(.2,.9,.3,1) both;
   }
   .player-card:fullscreen { border-radius: 0; display: flex; flex-direction: column; justify-content: center; }
-  /* Plein écran de secours (iPhone, environnements sans Fullscreen API) */
+  /* Plein écran de secours (iPhone, environnements sans Fullscreen API) :
+     lecteur bord à bord sur fond noir, contrôles en surimpression */
   .player-card.fake-fs {
-    position: fixed; inset: 0; z-index: 999; margin: 0; border-radius: 0; border: none;
-    display: flex; flex-direction: column; justify-content: center; background: #fff;
+    position: fixed; inset: 0; z-index: 999; margin: 0; padding: 0;
+    border: none; border-radius: 0; background: #000; box-shadow: none;
+    animation: none; /* l'animation d'entrée (fill both) écraserait la rotation */
+  }
+  .player-card.fake-fs .player-frame { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
+  .player-card.fake-fs .player-meta {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    padding: 14px calc(16px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+    background: linear-gradient(transparent, rgba(0,0,0,.65));
+  }
+  .player-card.fake-fs #now-title { color: #fff; }
+  /* iPhone tenu en portrait : rotation du lecteur pour un plein écran paysage */
+  @media (orientation: portrait) {
+    .player-card.fake-fs {
+      inset: auto; top: 0; left: 0;
+      width: 100vh; width: 100dvh;
+      height: 100vw; height: 100dvw;
+      transform: rotate(90deg) translateY(-100%);
+      transform-origin: top left;
+    }
   }
   .player-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: var(--yas-navy-logo); }
   .player-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -268,6 +287,10 @@
       if (card.requestFullscreen) {
         await card.requestFullscreen();
         clearTimeout(fallback); exitFake();
+        // Paysage automatique quand l'appareil le permet (Android)
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('landscape').catch(() => {});
+        }
       } else if (card.webkitRequestFullscreen) {
         card.webkitRequestFullscreen(); // pas de promesse : le garde-fou tranche
       } else {
@@ -279,7 +302,10 @@
   }
 
   document.getElementById('btn-fs').addEventListener('click', toggleFullscreen);
-  document.addEventListener('fullscreenchange', () => { if (realFullscreenActive()) exitFake(); });
+  document.addEventListener('fullscreenchange', () => {
+    if (realFullscreenActive()) exitFake();
+    else if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+  });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && card.classList.contains('fake-fs')) toggleFullscreen();
   });
