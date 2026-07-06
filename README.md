@@ -19,6 +19,7 @@ Aucune dépendance. Au premier lancement, le serveur crée `config.json` (mot de
 - La page invités interroge le serveur toutes les 12 s : elle démarre, change de flux ou repasse en attente automatiquement selon la régie.
 - Anti-partage : clic droit bloqué, lecteur piloté par l'API IFrame YouTube (`controls=0`) sous un calque transparent, contrôles Yas maison — aucun lien YouTube cliquable. Hors ligne, l'API ne renvoie pas l'ID de la vidéo.
 - Côté YouTube, diffusez en **non répertorié** pour que le direct reste introuvable sur la plateforme.
+- **Filtrage réseau** (`ipFilter` dans `config.json`) : le direct n'est visible que depuis le réseau Yas (AS328061, ex-Telma Comores — plages `102.202.32.0/22`, `102.207.176.0/22`, `102.223.120.0/22`, `164.160.136.0/22`) et le réseau local. Les autres opérateurs (dont Comores Telecom, AS36939) voient une page « Réservé aux clients Yas ». Mettre `trustProxy: true` si le serveur est derrière un proxy ou un tunnel (l'IP client est alors lue dans `X-Forwarded-For`) ; `enabled: false` pour couper le filtre. `/admin` n'est jamais filtré.
 
 ## Pages
 

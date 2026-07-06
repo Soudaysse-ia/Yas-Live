@@ -15,6 +15,18 @@ function loadConfig() {
       adminPassword: 'dis-yas-2026',
       shareToken: crypto.randomBytes(8).toString('hex'),
       requireToken: false,
+      // Filtrage réseau : seuls les clients Yas (AS328061, ex-Telma Comores)
+      // et le réseau local voient le direct. trustProxy: true si le serveur
+      // est derrière un proxy/tunnel (l'IP client vient alors de X-Forwarded-For).
+      ipFilter: {
+        enabled: true,
+        trustProxy: false,
+        allow: [
+          '102.202.32.0/22', '102.207.176.0/22', '102.223.120.0/22', '164.160.136.0/22',
+          '2c0f:f2c8::/32',
+          '127.0.0.0/8', '::1/128', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'
+        ]
+      },
       stream: { videoId: '', title: '', live: false }
     };
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
@@ -65,6 +77,58 @@ function readBody(req) {
 
 const isAdmin = (req) => req.headers['x-admin-key'] === config.adminPassword;
 
+// ---- Filtrage IP ----
+function ipToBigInt(raw) {
+  let ip = String(raw || '').trim().toLowerCase();
+  if (ip.startsWith('::ffff:') && ip.includes('.')) ip = ip.slice(7);
+  if (!ip.includes(':')) {
+    const p = ip.split('.').map(Number);
+    if (p.length !== 4 || p.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
+    return { family: 4, value: (BigInt(p[0]) << 24n) | (BigInt(p[1]) << 16n) | (BigInt(p[2]) << 8n) | BigInt(p[3]) };
+  }
+  let groups;
+  if (ip.includes('::')) {
+    const [h, t] = ip.split('::');
+    const hg = h ? h.split(':') : [];
+    const tg = t ? t.split(':') : [];
+    if (hg.length + tg.length > 8) return null;
+    groups = [...hg, ...Array(8 - hg.length - tg.length).fill('0'), ...tg];
+  } else {
+    groups = ip.split(':');
+  }
+  if (groups.length !== 8) return null;
+  let v = 0n;
+  for (const g of groups) {
+    if (!/^[0-9a-f]{1,4}$/.test(g || '0')) return null;
+    v = (v << 16n) | BigInt(parseInt(g || '0', 16));
+  }
+  return { family: 6, value: v };
+}
+
+function ipAllowed(ip, cidrs) {
+  const parsed = ipToBigInt(ip);
+  if (!parsed) return false;
+  for (const cidr of cidrs) {
+    const [net, bitsStr] = String(cidr).split('/');
+    const netParsed = ipToBigInt(net);
+    if (!netParsed || netParsed.family !== parsed.family) continue;
+    const total = parsed.family === 4 ? 32n : 128n;
+    const bits = BigInt(bitsStr !== undefined ? bitsStr : Number(total));
+    if (bits < 0n || bits > total) continue;
+    const shift = total - bits;
+    if ((parsed.value >> shift) === (netParsed.value >> shift)) return true;
+  }
+  return false;
+}
+
+function clientIp(req) {
+  if (config.ipFilter && config.ipFilter.trustProxy) {
+    const fwd = req.headers['x-forwarded-for'];
+    if (fwd) return fwd.split(',')[0].trim();
+  }
+  return req.socket.remoteAddress || '';
+}
+
 const MIME = { '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webp': 'image/webp' };
 
 const server = http.createServer(async (req, res) => {
@@ -81,6 +145,14 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'public, max-age=86400' });
       res.end(data);
     });
+  }
+
+  // ---- Filtrage réseau : le direct est réservé au réseau Yas ----
+  const isViewerPath = pathname === '/' || pathname === '/live' || pathname.startsWith('/live/') || pathname === '/api/stream';
+  const filter = config.ipFilter;
+  if (isViewerPath && filter && filter.enabled && !ipAllowed(clientIp(req), filter.allow || [])) {
+    if (pathname === '/api/stream') return sendJSON(res, 403, { error: 'Réseau non autorisé' });
+    return sendFile(res, 'blocked.html', 403);
   }
 
   // ---- Viewer ----
